@@ -1,4 +1,4 @@
-#version 430
+#version 330
 
 // #define DEBUG_ALBEDO
 // #define DEBUG_NORMALS
@@ -695,21 +695,20 @@ vec3 rayTrace(Ray ray) {
 }
 
 void main() {
-  seed = seedInit;
-  flatIdx = int(dot(gl_FragCoord.xy, vec2(1, 4096)));
-
-  // Generate sample
-  Ray ray = genRay(getRandom());
-  // vec3 op = clamp(rayTrace(ray), vec3(0), vec3(1));
-  vec3 op = clamp(rayTrace(ray), vec3(0), vec3(1));
-
-  // Get previous data
-  vec3 prev = texture(prevFrame, gl_FragCoord.xy / resolution.xy).rgb;
-
-  // Add to previous frame
-#ifndef DEBUG_SINGLE
-  fragColor = vec4(op + prev, 1);
-#else
-  fragColor = vec4(op, 1);
-#endif
+   seed = seedInit;
+   flatIdx = int(dot(gl_FragCoord.xy, vec2(1, 4096)));
+   // Generate sample
+   Ray ray = genRay(getRandom());
+   // vec3 op = clamp(rayTrace(ray), vec3(0), vec3(1));
+   vec3 op = clamp(rayTrace(ray), vec3(0), vec3(1));
+   // Get previous data
+vec3 prev = texture(prevFrame, gl_FragCoord.xy / resolution.xy).rgb;
+   // Add to previous frame
+ #ifndef DEBUG_SINGLE
+   fragColor = vec4(op + prev, 1);
+ #else
+   fragColor = vec4(op, 1);
+ #endif
+	// vec3 color = vec3(1, 0, 0);
+	// fragColor = vec4(color + prev, 1);
 }
