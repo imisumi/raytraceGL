@@ -10,6 +10,7 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 set(SOURCES "${SRC_DIR}/main.cpp")
 
+
 # Executable definition and properties
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
@@ -43,3 +44,8 @@ target_link_libraries(${PROJECT_NAME} "glad" "${CMAKE_DL_LIBS}")
 # add_library("imgui" STATIC "${IMGUI_SOURCES}" ${LIB_DIR}/imgui/imgui_impl_glfw.cpp)
 # target_include_directories("ImGui" PUBLIC "${LIB_DIR}/imgui")
 # target_link_libraries(${PROJECT_NAME} "ImGui")
+
+# GLM
+set(GLM_INCLUDE_DIR "${LIB_DIR}/GLM")
+include_directories(${GLM_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} ${GLM_INCLUDE_DIR}/glm)

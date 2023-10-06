@@ -1,22 +1,53 @@
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
+// #include <glad/glad.h>
+// #include "glad.h"
 #include <iostream>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include "../include/shader.hpp"
 
-#define WIDTH	1200
-#define HEIGHT	1000
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+// unsigned int SCR_SIZE = 0;
+unsigned int samples = 1;
+
+bool cameraMoved = false;
+
+#define WIDTH	1920
+#define HEIGHT	1080
 
 void	processInput(GLFWwindow *window);
-void	render(Shader &shader, float vertices[], unsigned int VAO,
-						unsigned int vertLen, unsigned int samples);
-unsigned int createFramebuffer(unsigned int *texture);
+GLuint createFramebuffer(GLuint *texture);
+
+void	cam_movement(glm::vec3& camPos, glm::vec3 camDir,GLFWwindow* window);
+void	RecalculateView(glm::vec3 camPos, glm::vec3 camDir, glm::mat4& m_View, glm::mat4& m_InverseView);
+void	RecalculateRayDirections(glm::mat4& m_Projection, glm::mat4& m_InverseProjection);
+void	cam_orientation(glm::vec3 camPos, glm::vec3& camDir, glm::vec2& lastMousePos, GLFWwindow* window, \
+							glm::mat4& m_View, glm::mat4& m_InverseView, glm::mat4& m_Projection, glm::mat4& m_InverseProjection);
 
 // settings
-unsigned int SCR_SIZE = 0;
-unsigned int SAMPLES = 0;
+
+
+void update_camera(GLuint fb1, GLuint fb2)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, fb1);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	// glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	// Clear framebuffer 2
+	glBindFramebuffer(GL_FRAMEBUFFER, fb2);
+	// glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	// Reset cameraMoved flag
+	cameraMoved = false;
+	samples = 1;
+}
 
 int	main(int argc, char *argv[])
 {
@@ -78,8 +109,6 @@ int	main(int argc, char *argv[])
 	GLuint fbTexture2;
 	GLuint fb2 = createFramebuffer(&fbTexture2);
 
-	unsigned int samples = 0;
-
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fbTexture1);
 	glActiveTexture(GL_TEXTURE1);
@@ -88,16 +117,58 @@ int	main(int argc, char *argv[])
 	// Store start time
 	double t0 = glfwGetTime();
 	glDisable(GL_DEPTH_TEST);
-//	 while (!glfwWindowShouldClose(window) && samples <= SAMPLES)
+	glm::vec3 camPosition = glm::vec3(0.0f, 0.0f, -2.0f);
+	glm::vec3 camDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::mat4 viewMat{ 1.0f };
+	glm::mat4 invViewMat{ 1.0f };
+	glm::mat4 m_Projection{ 1.0f };
+	glm::mat4 m_InverseProjection{ 1.0f };
+	glm::vec2 lastMousePos(0.0f, 0.0f);
+	RecalculateView(camPosition, camDirection, viewMat, invViewMat);
+	RecalculateRayDirections(m_Projection, m_InverseProjection);
+	cameraMoved = false;
+	// cameraMoved = true;
+	double lastTime = glfwGetTime();
+	int frameCount = 0;
 	while (!glfwWindowShouldClose(window))
 	{
+		double currentTime = glfwGetTime();
+		frameCount++;
+		if (currentTime - lastTime >= 1.0) {
+			// Update window title with FPS information
+			std::string title = "Ray Tracer - FPS: " + std::to_string(frameCount);
+			glfwSetWindowTitle(window, title.c_str());
+
+			// Reset frame count and last update time
+			frameCount = 0;
+			lastTime = currentTime;
+		}
 		// input
 		// -----
+		cam_movement(camPosition, camDirection, window);
+		cam_orientation(camPosition, camDirection, lastMousePos, window, viewMat, invViewMat, m_Projection, m_InverseProjection);
 		processInput(window);
+
+		// cameraMoved = true;
+		if (cameraMoved == true)
+		{
+			// std::cout << "Camera moved" << std::endl;
+			update_camera(fb1, fb2);
+		}
 
 		// Render pass on fb1
 		glBindFramebuffer(GL_FRAMEBUFFER, fb1);
-		render(shader, vertices, VAO, sizeof(vertices), samples);
+		shader.use();
+		shader.setInt("prevFrame", 1);
+		shader.setVec2("resolution", glm::vec2(WIDTH, HEIGHT));
+		shader.setFloat("checkerboard", 2);
+		shader.setVec3("u_camPosition", camPosition);
+		shader.setFloat("u_samples", samples);
+		shader.setMat4("_invView", invViewMat);
+		shader.setMat4("_invProjection", m_InverseProjection);
+
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / 3);
 
 		// Copy to fb2
 		glBindFramebuffer(GL_FRAMEBUFFER, fb2);
@@ -109,7 +180,7 @@ int	main(int argc, char *argv[])
 		glUniform2f(glGetUniformLocation(ID, "resolution"), WIDTH, HEIGHT);
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices) / 3);
-		samples += 1;
+		// samples += 1;
 
 		// Render to screen
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -136,9 +207,9 @@ int	main(int argc, char *argv[])
 
 		std::cout << "Progress: " << samples << " samples"
 							<< '\r';
-	usleep(100000);
-	}
 
+		samples += 1;
+	}
 
 	std::cout << "INFO::Time taken: " << glfwGetTime() - t0 << "s" << std::endl;
 
@@ -159,49 +230,16 @@ int	main(int argc, char *argv[])
 // process all input: query GLFW whether relevant keys are pressed/released this
 // frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window) {
+void processInput(GLFWwindow *window)
+{
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
 }
 
-void render(Shader &shader, float vertices[], unsigned int VAO,
-						unsigned int vertLen, unsigned int samples) {
-	// render
-	// ------
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	// render the shader
-	shader.use();
-
-	// Set uniforms
-	unsigned int ID = shader.ID;
-
-	shader.setInt("prevFrame", 1);
-
-	shader.setInt("samples", samples);
-	shader.setInt("numBounces", 8);
-	shader.setFloat("time", glfwGetTime());
-	shader.setInt("seedInit", rand());
-
-	// Light properties
-	shader.setFloat("intensity", 1.0);
-
-	// Camera properties
-	shader.setFloat("focalDistance", 2);
-	glUniform2f(glGetUniformLocation(ID, "resolution"), WIDTH, HEIGHT);
-
-	// Checkerboard
-	shader.setFloat("checkerboard", 2);
-
-	glBindVertexArray(VAO);
-	glDrawArrays(GL_TRIANGLES, 0, vertLen / 3);
-}
-
-unsigned int createFramebuffer(unsigned int *texture) {
+GLuint createFramebuffer(GLuint *texture) {
 	// Create a framebuffer to write output to
-	unsigned int fb;
+	GLuint fb;
 	glGenFramebuffers(1, &fb);
 	glBindFramebuffer(GL_FRAMEBUFFER, fb);
 
@@ -225,4 +263,90 @@ unsigned int createFramebuffer(unsigned int *texture) {
 	}
 
 	return fb;
+}
+
+void	cam_movement(glm::vec3& camPos, glm::vec3 camDir,GLFWwindow* window)
+{
+	float speed = 0.01f;
+	glm::vec3 upDirection(0.0f, 1.0f, 0.0f);
+	glm::vec3 rightDirection = glm::cross(camDir, upDirection);
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		camPos += speed * camDir;
+		cameraMoved = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		camPos -= speed * rightDirection;
+		cameraMoved = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		camPos -= speed * camDir;
+		cameraMoved = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		camPos += speed * rightDirection;
+		cameraMoved = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		camPos += speed * upDirection;
+		cameraMoved = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	{
+		camPos -= speed * upDirection;
+		cameraMoved = true;
+	}
+}
+
+void	RecalculateView(glm::vec3 camPos, glm::vec3 camDir, glm::mat4& m_View, glm::mat4& m_InverseView)
+{
+	m_View = glm::lookAt(camPos, camPos + camDir, glm::vec3(0.0f, 1.0f, 0.0f));
+	m_InverseView = glm::inverse(m_View);
+}
+
+void	RecalculateRayDirections(glm::mat4& m_Projection, glm::mat4& m_InverseProjection)
+{
+	m_Projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+	m_InverseProjection = glm::inverse(m_Projection);
+}
+
+void	cam_orientation(glm::vec3 camPos, glm::vec3& camDir, glm::vec2& lastMousePos, GLFWwindow* window, \
+							glm::mat4& m_View, glm::mat4& m_InverseView, glm::mat4& m_Projection, glm::mat4& m_InverseProjection)
+{
+	float speed = 0.01f;
+	// glm::vec3 upDirection(0.0f, 1.0f, 0.0f);
+	// glm::vec3 rightDirection = glm::cross(camDir, upDirection);
+
+	double _mouseX;
+	double _mouseY;
+	glfwGetCursorPos(window, &_mouseX, &_mouseY);
+	glm::vec2 mousePos(_mouseX, _mouseY);
+
+	glm::vec2 delta = (mousePos - lastMousePos) * speed;
+	lastMousePos = mousePos;
+
+	float rotSpeed = 0.1f;
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+	{
+		glm::vec3 upDirection(0.0f, 1.0f, 0.0f);
+		glm::vec3 rightDirection = glm::cross(camDir, upDirection);
+
+		float pitchDelta = delta.y * rotSpeed;
+		float yawDelta = delta.x * rotSpeed;
+
+		glm::quat q = glm::normalize(glm::cross(glm::angleAxis(-pitchDelta, rightDirection),
+			glm::angleAxis(-yawDelta, glm::vec3(0.f, 1.0f, 0.0f))));
+		// camDir = glm::rotate(q, camDir);
+		glm::quat camDirQuat(0.0f, camDir.x, camDir.y, camDir.z);
+		camDirQuat = q * camDirQuat * glm::conjugate(q);
+		camDir = glm::vec3(camDirQuat.x, camDirQuat.y, camDirQuat.z);
+
+		RecalculateView(camPos, camDir, m_View, m_InverseView);
+		RecalculateRayDirections(m_Projection, m_InverseProjection);
+		cameraMoved = true;
+	}
 }
