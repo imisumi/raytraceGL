@@ -130,6 +130,7 @@ int	main(int argc, char *argv[])
 	// cameraMoved = true;
 	double lastTime = glfwGetTime();
 	int frameCount = 0;
+	float total_frames = 0;
 	while (!glfwWindowShouldClose(window))
 	{
 		double currentTime = glfwGetTime();
@@ -164,6 +165,8 @@ int	main(int argc, char *argv[])
 		shader.setFloat("checkerboard", 2);
 		shader.setVec3("u_camPosition", camPosition);
 		shader.setFloat("u_samples", samples);
+		shader.setFloat("u_frames", total_frames);
+		shader.setInt("seedInit", rand());
 		shader.setMat4("_invView", invViewMat);
 		shader.setMat4("_invProjection", m_InverseProjection);
 
@@ -208,7 +211,8 @@ int	main(int argc, char *argv[])
 		std::cout << "Progress: " << samples << " samples"
 							<< '\r';
 
-		samples += 1;
+		samples++;
+		total_frames++;
 	}
 
 	std::cout << "INFO::Time taken: " << glfwGetTime() - t0 << "s" << std::endl;
