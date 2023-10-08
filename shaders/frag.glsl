@@ -31,14 +31,14 @@ uniform mat4 _invProjection;
 uniform int seedInit;
 int seed = 0;
 
-const float c_rayPosNormalNudge = 0.01f;
+const float c_rayPosNormalNudge = 0.0001f;
 const float c_superFar = 10000.0f;
 const float c_FOVDegrees = 90.0f;
 const int c_numBounces = 8;
 const int c_numRendersPerFrame = 1;
 const float c_pi = 3.14159265359f;
 const float c_twopi = 2.0f * c_pi;
-const float c_minimumRayHitTime = 0.1f;
+const float c_minimumRayHitTime = 0.001f;
 
 #define MAX_BOUNCES 5
 
@@ -206,47 +206,171 @@ vec3 RandomHemisphereDirection(vec3 normal, inout uint state)
 	return dir * sign(dot(normal, dir));
 }
 
+// void	scene_intersection(Ray ray, inout HitInfo info)
+// {
+// 	Sphere sphere;
+
+// 	vec3 A = vec3(-15.0f, -15.0f, 22.0f);
+// 	vec3 B = vec3( 15.0f, -15.0f, 22.0f);
+// 	vec3 C = vec3( 15.0f,  15.0f, 22.0f);
+// 	vec3 D = vec3(-15.0f,  15.0f, 22.0f);
+// 	if (TestQuadTrace(ray, info, A, B, C, D))
+// 	{
+// 		info.albedo = vec3(0.7f, 0.7f, 0.7f);
+// 		info.emissive = vec3(0.0, 0.0, 0.0);
+// 	}
+
+// 	sphere.position = vec3(-10.0, 0.0, 20.0);
+// 	sphere.radius = 0.5;
+// 	if (sphere_intersection(ray, info, sphere))
+// 	{
+// 		info.albedo = vec3(1.0f, 0.1f, 0.1f);
+// 		info.emissive = vec3(0.0, 0.0, 0.0);
+// 	}
+// 	sphere.position.x  = 0.0;
+// 	if (sphere_intersection(ray, info, sphere))
+// 	{
+// 		info.albedo = vec3(0.1f, 1.0f, 0.1f);
+// 		info.emissive = vec3(0.0, 0.0, 0.0);
+// 	}
+// 	sphere.position.x = 10.0;
+// 	if (sphere_intersection(ray, info, sphere))
+// 	{
+// 		info.albedo = vec3(0.1f, 0.1f, 1.0f);
+// 		info.emissive = vec3(0.0, 0.0, 0.0);
+// 	}
+
+// 	sphere.radius = 5.0;
+// 	sphere.position = vec3(10.0f, 10.0f, 20.0f);
+// 	if (sphere_intersection(ray, info, sphere))
+// 	{
+// 		info.albedo = vec3(0.0, 0.0, 0.0);
+// 		info.emissive = vec3(1.0, 0.9, 0.7) * 10.0;
+// 	}
+// }
+
 void	scene_intersection(Ray ray, inout HitInfo info)
 {
 	Sphere sphere;
 
-	vec3 A = vec3(-15.0f, -15.0f, 22.0f);
-	vec3 B = vec3( 15.0f, -15.0f, 22.0f);
-	vec3 C = vec3( 15.0f,  15.0f, 22.0f);
-	vec3 D = vec3(-15.0f,  15.0f, 22.0f);
+	// back wall
+	vec3 A = vec3(-12.6f, -12.6f, 25.0f);
+	vec3 B = vec3( 12.6f, -12.6f, 25.0f);
+	vec3 C = vec3( 12.6f,  12.6f, 25.0f);
+	vec3 D = vec3(-12.6f,  12.6f, 25.0f);
 	if (TestQuadTrace(ray, info, A, B, C, D))
 	{
-		info.albedo = vec3(1.0f, 0.1f, 0.1f);
-		info.emissive = vec3(0.0, 0.0, 0.0);
+	    info.albedo = vec3(0.7f, 0.7f, 0.7f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
+	}
+	 
+    
+    // floor
+	A = vec3(-12.6f, -12.45f, 25.0f);
+	B = vec3( 12.6f, -12.45f, 25.0f);
+	C = vec3( 12.6f, -12.45f, 15.0f);
+	D = vec3(-12.6f, -12.45f, 15.0f);
+	if (TestQuadTrace(ray, info, A, B, C, D))
+	{
+	    info.albedo = vec3(0.7f, 0.7f, 0.7f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
+	}        
+
+    
+    // cieling
+	A = vec3(-12.6f, 12.5f, 25.0f);
+	B = vec3( 12.6f, 12.5f, 25.0f);
+	C = vec3( 12.6f, 12.5f, 15.0f);
+	D = vec3(-12.6f, 12.5f, 15.0f);
+	if (TestQuadTrace(ray, info, A, B, C, D))
+	{
+	    info.albedo = vec3(0.7f, 0.7f, 0.7f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
+	}
+	
+    
+    // left wall
+	A = vec3(-12.5f, -12.6f, 25.0f);
+	B = vec3(-12.5f, -12.6f, 15.0f);
+	C = vec3(-12.5f,  12.6f, 15.0f);
+	D = vec3(-12.5f,  12.6f, 25.0f);
+	if (TestQuadTrace(ray, info, A, B, C, D))
+	{
+	    info.albedo = vec3(0.7f, 0.1f, 0.1f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
 	}
 
-	sphere.position = vec3(-10.0, 0.0, 20.0);
-	sphere.radius = 0.5;
-	if (sphere_intersection(ray, info, sphere))
+    // right wall 
+	A = vec3( 12.5f, -12.6f, 25.0f);
+	B = vec3( 12.5f, -12.6f, 15.0f);
+	C = vec3( 12.5f,  12.6f, 15.0f);
+	D = vec3( 12.5f,  12.6f, 25.0f);
+	if (TestQuadTrace(ray, info, A, B, C, D))
 	{
-		info.albedo = vec3(0.1f, 1.0f, 0.1f);
-		info.emissive = vec3(0.0, 0.0, 0.0);
-	}
-	sphere.position.x  = 0.0;
-	if (sphere_intersection(ray, info, sphere))
-	{
-		info.albedo = vec3(0.1f, 0.1f, 1.0f);
-		info.emissive = vec3(0.0, 0.0, 0.0);
-	}
-	sphere.position.x = 10.0;
-	if (sphere_intersection(ray, info, sphere))
-	{
-		info.albedo = vec3(0.1294, 0.1294, 0.5451);
-		info.emissive = vec3(0.0, 0.0, 0.0);
-	}
-	sphere.radius = 5.0;
-	sphere.position = vec3(10.0f, 10.0f, 20.0f);
-	if (sphere_intersection(ray, info, sphere))
-	{
-		info.albedo = vec3(0.0, 0.0, 0.0);
-		info.emissive = vec3(1.0, 0.9, 0.7) * 100.0;
+	    info.albedo = vec3(0.1f, 0.7f, 0.1f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
 	}
 
+    // light
+	A = vec3(-5.0f, 12.4f,  22.5f);
+	B = vec3( 5.0f, 12.4f,  22.5f);
+	C = vec3( 5.0f, 12.4f,  17.5f);
+	D = vec3(-5.0f, 12.4f,  17.5f);
+	if (TestQuadTrace(ray, info, A, B, C, D))
+	{
+	    info.albedo = vec3(0.0f, 0.0f, 0.0f);
+	    info.emissive = vec3(1.0f, 0.9f, 0.7f) * 20.0f;
+	}
+
+	sphere.position = vec3(-9.0f, -9.5f, 20.0f);
+	sphere.radius = 3.0;
+	if (sphere_intersection(ray, info, sphere))
+	{
+	    info.albedo = vec3(0.9f, 0.9f, 0.75f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
+	}
+	sphere.position.x = 0.0;
+	if (sphere_intersection(ray, info, sphere))
+	{
+	    info.albedo = vec3(0.9f, 0.75f, 0.9f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
+	}
+	sphere.position.x = 9.0;
+	if (sphere_intersection(ray, info, sphere))
+	{
+	    info.albedo = vec3(0.75f, 0.9f, 0.9f);
+	    info.emissive = vec3(0.0f, 0.0f, 0.0f);
+	}
+
+
+
+	// sphere.position = vec3(-10.0, 0.0, 20.0);
+	// sphere.radius = 0.5;
+	// if (sphere_intersection(ray, info, sphere))
+	// {
+	// 	info.albedo = vec3(1.0f, 0.1f, 0.1f);
+	// 	info.emissive = vec3(0.0, 0.0, 0.0);
+	// }
+	// sphere.position.x  = 0.0;
+	// if (sphere_intersection(ray, info, sphere))
+	// {
+	// 	info.albedo = vec3(0.1f, 1.0f, 0.1f);
+	// 	info.emissive = vec3(0.0, 0.0, 0.0);
+	// }
+	// sphere.position.x = 10.0;
+	// if (sphere_intersection(ray, info, sphere))
+	// {
+	// 	info.albedo = vec3(0.1f, 0.1f, 1.0f);
+	// 	info.emissive = vec3(0.0, 0.0, 0.0);
+	// }
+
+	// sphere.radius = 5.0;
+	// sphere.position = vec3(10.0f, 10.0f, 20.0f);
+	// if (sphere_intersection(ray, info, sphere))
+	// {
+	// 	info.albedo = vec3(0.0, 0.0, 0.0);
+	// 	info.emissive = vec3(1.0, 0.9, 0.7) * 10.0;
+	// }
 }
 
 vec3 GetRayColor(Ray ray, uint rngState)
@@ -256,7 +380,7 @@ vec3 GetRayColor(Ray ray, uint rngState)
 
 	vec3 ray_color = vec3(1.0f, 1.0f, 1.0f);
 
-	for (int bounces = 0; bounces < 5; bounces++)
+	for (int bounces = 0; bounces < 16; bounces++)
 	{
 		HitInfo	hitinfo;
 		hitinfo.dist = c_superFar;
@@ -264,7 +388,12 @@ vec3 GetRayColor(Ray ray, uint rngState)
 
 		if (hitinfo.dist == c_superFar)
 		{
+			break ;
 			// ret += throughput * vec3(0.2078, 0.0549, 0.3137);
+			vec3 unit_direction = normalize(ray.direction);
+			float t = 0.5f * (unit_direction.y + 1.0f);
+			vec3 sky = vec3(1) * (1.0f - t) + (vec3(0.5f, 0.7f, 1.0f) *  t);
+			ret = ret + (ray_color * sky);
 			break;
 		}
 		// return hitinfo.albedo;
@@ -291,7 +420,8 @@ void main()
 
 	vec3 rayOrigin = u_camPosition;
 	vec4 target = _invProjection * vec4(coord, 1.0, 1.0);
-	vec3 rayDirection = vec3(_invView * vec4(normalize(vec3(target.xyz) / target.w), 0.0));
+	// vec3 rayDirection = vec3(_invView * vec4(normalize(vec3(target.xyz) / target.w), 0.0));
+	vec3 rayDirection = vec3(_invView * vec4(normalize(vec3(-target.x, target.y, target.z) / target.w), 0.0));
 
 	vec3 prev = texture(prevFrame, fragCoord.xy / resolution.xy).rgb;
 
@@ -308,18 +438,13 @@ void main()
 	ray.direction = rayDirection;
 
 	vec3 color = GetRayColor(ray, rngState);
-	color = clamp(color, 0.0, 1.0);
+	// color = clamp(color, 0.0, 1.0);
 	fragColor = vec4(color + prev, 1.0);
 	// fragColor = vec4(color, 1.0);
 	// fragColor = vec4(rayDirection + prev, 1.0);
-
-
-	// float r = RandomFloat(rngState);
-	// float g = RandomFloat(rngState);
-	// float b = RandomFloat(rngState);
-	// fragColor = vec4(vec3(r, g, b) + prev, 1.0);
-	// fragColor = vec4(vec3(r, g, b), 1.0);
 }
+
+
 
 // void main()
 // {

@@ -117,7 +117,7 @@ int	main(int argc, char *argv[])
 	// Store start time
 	double t0 = glfwGetTime();
 	glDisable(GL_DEPTH_TEST);
-	glm::vec3 camPosition = glm::vec3(0.0f, 0.0f, -2.0f);
+	glm::vec3 camPosition = glm::vec3(0.0f, 0.0f, -15.0f);
 	glm::vec3 camDirection = glm::vec3(0.0f, 0.0f, 1.0f);
 	glm::mat4 viewMat{ 1.0f };
 	glm::mat4 invViewMat{ 1.0f };
@@ -281,7 +281,7 @@ void	cam_movement(glm::vec3& camPos, glm::vec3 camDir,GLFWwindow* window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		camPos -= speed * rightDirection;
+		camPos += speed * rightDirection;
 		cameraMoved = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -291,7 +291,7 @@ void	cam_movement(glm::vec3& camPos, glm::vec3 camDir,GLFWwindow* window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		camPos += speed * rightDirection;
+		camPos -= speed * rightDirection;
 		cameraMoved = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
@@ -340,7 +340,7 @@ void	cam_orientation(glm::vec3 camPos, glm::vec3& camDir, glm::vec2& lastMousePo
 		glm::vec3 rightDirection = glm::cross(camDir, upDirection);
 
 		float pitchDelta = delta.y * rotSpeed;
-		float yawDelta = delta.x * rotSpeed;
+		float yawDelta = -delta.x * rotSpeed;
 
 		glm::quat q = glm::normalize(glm::cross(glm::angleAxis(-pitchDelta, rightDirection),
 			glm::angleAxis(-yawDelta, glm::vec3(0.f, 1.0f, 0.0f))));
